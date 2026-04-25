@@ -1,0 +1,104 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - src/**
+      - tests/**
+      - pyproject.toml
+      - uv.lock
+      - .github/workflows/test.yaml
+  pull_request:
+    paths:
+      - src/**
+      - tests/**
+      - pyproject.toml
+      - uv.lock
+      - .github/workflows/test.yaml
+  workflow_dispatch: {}
+  schedule:
+    # Run every 27 hours to avoid running at the same time every day
+    - cron: "40 12 * * 1-5"
+
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+
+env:
+  FORCE_COLOR: 1
+
+jobs:
+  typing:
+    name: Typing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        id: setup-python
+      - uses: astral-sh/setup-uv@v6
+      - env:
+          UV_PYTHON: ${{ steps.setup-python.outputs.python-version }}
+        run: >
+          uvx
+          --with tox-uv
+          --with tox
+          tox -e types
+
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest"]
+        python-version:
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
+          - "3.14"
+        include:
+          - python-version: "3.14"
+            os: "windows-latest"
+
+          - python-version: "3.14"
+            os: "macos-latest"
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        id: setup-python
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+      - uses: astral-sh/setup-uv@v6
+      - run: >
+          uvx
+          --with tox-uv
+          --with tox
+          tox -e ${{ matrix.python-version }}
+      - uses: actions/upload-artifact@v4
+        with:
+          include-hidden-files: true
+          name: coverage-data-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: ".coverage.*"
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-data-*
+          merge-multiple: true
+      - uses: astral-sh/setup-uv@v6
+      - name: Combine coverage data and generate report
+        run: >
+          uvx
+          --with tox-uv
+          --with tox
+          tox -e coverage

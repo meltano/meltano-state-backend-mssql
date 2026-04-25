@@ -1,0 +1,227 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = [ "hatchling", "hatch-vcs" ]
+
+[project]
+name = "meltano-state-backend-mssql"
+dynamic = [ "version" ]
+description = "Meltano State Backend for MSSQL"
+license = "MIT"
+license-files = [
+  "LICENSE",
+]
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+  "meltano>=3.7",
+  "pymssql>=2.3",
+]
+
+[project.urls]
+Documentation = "https://github.com/Matatika/meltano-state-backend-mssql"
+Source = "https://github.com/Matatika/meltano-state-backend-mssql"
+Issues = "https://github.com/Matatika/meltano-state-backend-mssql/issues"
+
+[project.entry-points."meltano.settings"]
+host = "meltano_state_backend_mssql.backend:MSSQL_HOST"
+port = "meltano_state_backend_mssql.backend:MSSQL_PORT"
+database = "meltano_state_backend_mssql.backend:MSSQL_DATABASE"
+user = "meltano_state_backend_mssql.backend:MSSQL_USER"
+password = "meltano_state_backend_mssql.backend:MSSQL_PASSWORD"
+schema = "meltano_state_backend_mssql.backend:MSSQL_SCHEMA"
+table = "meltano_state_backend_mssql.backend:MSSQL_TABLE"
+
+[project.entry-points."meltano.state_backends"]
+mssql = "meltano_state_backend_mssql.backend:MssqlStateStoreManager"
+
+[dependency-groups]
+dev = [
+  { include-group = "lint" },
+  { include-group = "tests" },
+  { include-group = "types" },
+]
+lint = [
+  "ruff>=0.15",
+]
+tests = [
+  "coverage[toml]>=7",
+  "pytest>=9",
+  "testcontainers[mssql]>=4",
+]
+types = [
+  { include-group = "tests" },
+  "mypy>=1.19",
+]
+
+[tool.hatch.version]
+fallback-version = "0.0.0.dev0"
+source = "vcs"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+  "A",    # flake8-builtins
+  "ANN",  # flake8-annotations
+  "ARG",  # flake8-unused-arguments
+  "B",    # flake8-bugbear
+  "C4",   # flake8-comprehensions
+  "COM",  # flake8-commas
+  "D",    # pydocstyle/flake8-docstrings
+  "DTZ",  # flake8-datetimez
+  "E",    # pycodestyle (error)
+  "EM",   # flake8-errmsg
+  "ERA",  # flake8-eradicate
+  "F",    # pyflakes
+  "FA",   # flake8-future-annotations
+  "FBT",  # flake8-boolean-trap
+  "G",    # flake8-logging-format
+  "I",    # isort
+  "ICN",  # flake8-import-conventions
+  "INP",  # flake8-no-pep420
+  "ISC",  # flake8-implicit-str-concat
+  "LOG",  # flake8-logging
+  "N",    # pep8-naming
+  "PERF", # Perflint
+  "PGH",  # pygrep-hooks
+  "PIE",  # flake8-pie
+  "PT",   # flake8-pytest-style
+  "PTH",  # flake8-use-pathlib
+  "Q",    # flake8-quotes
+  "RET",  # flake8-return
+  "RSE",  # flake8-raise
+  "RUF",  # Ruff specific rules
+  "S",    # flake8-bandit
+  "SIM",  # flake8-simplify
+  "T10",  # flake8-debugger
+  "T20",  # flake8-print
+  "TC",   # flake8-type-checking
+  "TID",  # flake8-tidy-imports
+  "UP",   # pyupgrade
+  "W",    # pycodestyle (warning)
+  "YTT",  # flake8-2020
+]
+ignore = [
+  "COM812", # Handled by the Ruff formatter
+  "ISC001", # Handled by the Ruff formatter
+]
+per-file-ignores."tests/**" = [
+  "D1",
+  "INP",
+  "S101",
+]
+
+[tool.ruff.lint.flake8-annotations]
+allow-star-arg-any = true
+mypy-init-return = true
+suppress-dummy-args = true
+
+[tool.ruff.lint.flake8-pytest-style]
+parametrize-values-type = "tuple"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.pytest.ini_options]
+addopts = [
+  "--durations=10",
+  "-ra",
+]
+log_level = "INFO"
+minversion = "9"
+testpaths = ["tests"]
+
+[tool.coverage.paths]
+package = [
+  "src/meltano_state_backend_mssql/",
+  "*/site-packages/meltano_state_backend_mssql/",
+]
+
+[tool.coverage.run]
+branch = true
+source = [
+  "meltano_state_backend_mssql",
+  "tests",
+]
+parallel = true
+relative_files = true
+
+[tool.coverage.report]
+exclude_also = [
+  '''if (t\.)?TYPE_CHECKING:''',
+]
+fail_under = 100
+
+[tool.mypy]
+enable_error_code = [
+  "ignore-without-code",
+  "redundant-expr",
+  "truthy-bool",
+]
+follow_untyped_imports = true
+strict = true
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+[tool.tox]
+requires = [ "tox>=4.52", "tox-uv" ]
+env_list = [
+  "types",
+  "lint",
+  { product = [
+    { prefix = "3.", start = 10 },
+  ] },
+  "coverage",
+]
+
+[tool.tox.env_run_base]
+description = "run tests on Python {py_dot_ver}"
+runner = "uv-venv-lock-runner"
+pass_env = [
+  "CI",
+]
+dependency_groups = [ "tests" ]
+commands = [ [ "coverage", "run", "-m", "pytest", { replace = "posargs", default = [ "tests" ], extend = true } ] ]
+
+[tool.tox.env.coverage]
+description = "compute code coverage"
+depends = [
+  "3.*",
+]
+dependency_groups = [ "tests" ]
+commands = [
+  [ "coverage", "combine", "--debug=pathmap" ],
+  [ "coverage", "report", "--show-missing" ],
+  [ "coverage", "xml" ],
+]
+
+[tool.tox.env.lint]
+description = "lint & format"
+dependency_groups = [ "lint" ]
+skip_install = true
+commands = [
+  [ "ruff", "check", "--fix", "--show-fixes", "--exit-non-zero-on-fix" ],
+  [ "ruff", "format", "--exit-non-zero-on-format" ],
+]
+
+[tool.tox.env.types]
+description = "type checking"
+dependency_groups = [ "tests", "types" ]
+commands = [
+  [
+    "mypy",
+    { replace = "posargs", default = [
+      "src/meltano_state_backend_mssql",
+      "tests",
+    ], extend = true },
+  ],
+]
