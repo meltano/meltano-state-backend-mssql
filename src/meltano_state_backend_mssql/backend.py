@@ -318,7 +318,7 @@ class MssqlStateStoreManager(StateStoreManager):
         completed_json = json.dumps(state.completed_state) if state.completed_state else None
 
         with self.connection.cursor() as cursor:
-            # MSSQL MERGE for upsert (equivalent to PostgreSQL ON CONFLICT DO UPDATE)
+            # MSSQL MERGE for upsert
             cursor.execute(
                 f"""
                 MERGE INTO {self.state_table} AS target
