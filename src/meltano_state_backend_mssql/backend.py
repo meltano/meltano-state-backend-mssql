@@ -5,11 +5,10 @@ from __future__ import annotations
 import json
 import logging
 import uuid
-from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from functools import cached_property
 from time import sleep
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import unquote, urlparse
 
 import pymssql
@@ -24,6 +23,7 @@ from meltano.core.state_store.base import (
 from typing_extensions import override
 
 if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable
     from types import TracebackType
 
 
@@ -257,7 +257,7 @@ class MssqlStateStoreManager(StateStoreManager):
         self._ensure_tables()
 
     @cached_property
-    def connection(self) -> pymssql.Connection:  # type: ignore[name-defined]
+    def connection(self) -> pymssql.Connection:
         """Get a pymssql connection with autocommit enabled.
 
         Returns:
@@ -265,7 +265,7 @@ class MssqlStateStoreManager(StateStoreManager):
 
         """
         conn = pymssql.connect(**self.conn_params)
-        conn.autocommit(True)
+        conn.autocommit(True)  # noqa: FBT003
         return conn
 
     def _ensure_tables(self) -> None:
@@ -287,7 +287,7 @@ class MssqlStateStoreManager(StateStoreManager):
                         CONSTRAINT PK_{self.table}_state_id PRIMARY KEY (state_id)
                     )
                 END
-            """)
+            """)  # noqa: S608
             # Lock table — used for acquire_lock
             lock_table_name = f"{self.table}_lock"
             cursor.execute(f"""
@@ -304,7 +304,7 @@ class MssqlStateStoreManager(StateStoreManager):
                         CONSTRAINT PK_{lock_table_name}_state_id PRIMARY KEY (state_id)
                     )
                 END
-            """)
+            """)  # noqa: S608
 
     @override
     def set(self, state: MeltanoState) -> None:
@@ -332,7 +332,7 @@ class MssqlStateStoreManager(StateStoreManager):
                 WHEN NOT MATCHED THEN
                     INSERT (state_id, partial_state, completed_state, updated_at)
                     VALUES (source.state_id, source.partial_state, source.completed_state, GETUTCDATE());
-                """,
+                """,  # noqa: S608
                 (state.state_id, partial_json, completed_json),
             )
 
@@ -360,8 +360,8 @@ class MssqlStateStoreManager(StateStoreManager):
             partial_state, completed_state = row
             return MeltanoState(
                 state_id=state_id,
-                partial_state=json.loads(partial_state) if partial_state is not None else {},
-                completed_state=json.loads(completed_state) if completed_state is not None else {},
+                partial_state=json.loads(str(partial_state)) if partial_state is not None else {},
+                completed_state=json.loads(str(completed_state)) if completed_state is not None else {},
             )
 
     @override
@@ -390,10 +390,10 @@ class MssqlStateStoreManager(StateStoreManager):
             cursor.execute(f"SELECT COUNT(*) FROM {self.state_table}")  # noqa: S608
             row = cursor.fetchone()
             assert row is not None, "Got an empty result from the database"  # noqa: S101
-            count = row[0]
+            count = cast("int", row[0])
 
             cursor.execute(f"TRUNCATE TABLE {self.state_table}")
-            return count  # type: ignore[no-any-return]
+            return count
 
     def get_state_ids(self, pattern: str | None = None) -> Iterable[str]:
         """Get all state_ids available in this state store manager.
@@ -415,7 +415,7 @@ class MssqlStateStoreManager(StateStoreManager):
             else:
                 cursor.execute(f"SELECT state_id FROM {self.state_table}")  # noqa: S608
 
-            yield from (row[0] for row in cursor.fetchall())
+            yield from (str(row[0]) for row in cursor.fetchall())
 
     def _cleanup_stale_locks(self) -> None:
         """Remove locks that are older than STALE_LOCK_SECONDS."""

@@ -219,7 +219,7 @@ def test_acquire_lock_max_retries_exceeded(
     # and make every INSERT unconditionally raise IntegrityError (lock always held).
     mock_cursor.execute.reset_mock()
 
-    def execute_side_effect(*args: object, **kwargs: object) -> None:
+    def execute_side_effect(*args: object, **_kwargs: object) -> None:
         if "INSERT" in str(args[0]):
             raise pymssql.IntegrityError
 
@@ -231,9 +231,9 @@ def test_acquire_lock_max_retries_exceeded(
             StateIDLockedError,
             match="Could not acquire lock for state_id: test_job",
         ),
+        manager.acquire_lock("test_job", retry_seconds=0.01),
     ):
-        with manager.acquire_lock("test_job", retry_seconds=0.01):
-            pass  # pragma: no cover
+        pass  # pragma: no cover
 
 
 # ---------------------------------------------------------------------------
@@ -249,7 +249,7 @@ def test_connection_params_from_uri() -> None:
     assert params["server"] == "myhost"
     assert params["port"] == 1433
     assert params["user"] == "myuser"
-    assert params["password"] == "mypass"
+    assert params["password"] == "mypass"  # noqa: S105
     assert params["database"] == "mydb"
 
 
@@ -283,7 +283,7 @@ def test_connection_params_minimal_uri_with_overrides() -> None:
     )
     assert params["server"] == "h"
     assert params["user"] == "u"
-    assert params["password"] == "p"
+    assert params["password"] == "p"  # noqa: S105
     assert params["database"] == "d"
 
 
@@ -343,9 +343,8 @@ def test_context_manager(
     mock_conn.close.assert_called_once()
 
 
-def test_close_without_connection(
-    mock_connection: tuple[mock.MagicMock, mock.Mock, mock.Mock],
-) -> None:
+@pytest.mark.usefixtures("mock_connection")
+def test_close_without_connection() -> None:
     """close() is a no-op when connection has never been opened."""
     from meltano_state_backend_mssql.backend import MssqlStateStoreManager
 
