@@ -11,14 +11,14 @@ This package needs to be installed in the same Python environment as Meltano.
 #### With [uv]
 
 ```bash
-uv tool install --with git+https://github.com/Matatika/meltano-state-backend-mssql.git meltano
+uv tool install --with git+https://github.com/meltano/meltano-state-backend-mssql.git meltano
 ```
 
 #### With [pipx]
 
 ```bash
 pipx install meltano
-pipx inject meltano git+https://github.com/Matatika/meltano-state-backend-mssql.git
+pipx inject meltano git+https://github.com/meltano/meltano-state-backend-mssql.git
 ```
 
 ## Configuration
