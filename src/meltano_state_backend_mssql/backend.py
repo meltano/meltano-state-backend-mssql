@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 
 DEFAULT_TABLE_NAME = "state"
-DEFAULT_SCHEMA_NAME = "dbo"
+DEFAULT_SCHEMA_NAME = "meltano"
 DEFAULT_PORT = 1433
 LOCK_TIMEOUT_SECONDS = 30
 STALE_LOCK_SECONDS = 300  # 5 minutes
@@ -84,7 +84,7 @@ MSSQL_PASSWORD = SettingDefinition(
 MSSQL_SCHEMA = SettingDefinition(
     name="state_backend.mssql.schema",
     label="MSSQL Schema",
-    description="MSSQL schema name (default: dbo)",
+    description="MSSQL schema name (default: meltano)",
     kind=SettingKind.STRING,
     env_specific=True,
 )
@@ -224,7 +224,7 @@ class MssqlStateStoreManager(StateStoreManager):
             database: MSSQL database name override
             user: MSSQL username override
             password: MSSQL password override
-            schema: MSSQL schema name (default: dbo)
+            schema: MSSQL schema name (default: meltano)
             table: MSSQL table name for state storage (default: state)
             kwargs: Additional keyword args passed to the parent
 

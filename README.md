@@ -40,7 +40,7 @@ To authenticate to MSSQL, you'll need to provide:
 state_backend:
   uri: mssql+pymssql://my_user:my_password@localhost:1433/my_database
   mssql:
-    schema: dbo  # Optional: defaults to dbo
+    schema: meltano  # Optional: defaults to meltano
     table: state  # Optional: defaults to state
 ```
 
@@ -55,7 +55,7 @@ state_backend:
     user: my_user
     password: my_password
     database: my_database
-    schema: dbo         # Optional: defaults to dbo
+    schema: meltano     # Optional: defaults to meltano
     table: state        # Optional: defaults to state
 ```
 
@@ -66,7 +66,7 @@ state_backend:
 - **user**: The username for authentication
 - **password**: The password for authentication
 - **database**: The database where state will be stored
-- **schema**: The schema where state tables will be created (default: `dbo`)
+- **schema**: The schema where state tables will be created (default: `meltano`)
 - **table**: The table name for state storage (default: `state`)
 
 #### Security Considerations
