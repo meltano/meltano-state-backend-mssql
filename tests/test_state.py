@@ -379,4 +379,4 @@ def test_explicit_table_name(
     )
     manager.connection = mock_conn
     assert manager.table == "custom_state"
-    assert "[dbo].[custom_state]" in manager.state_table
+    assert "[meltano].[custom_state]" in manager.state_table
