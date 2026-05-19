@@ -315,6 +315,21 @@ def test_connection_params_missing_required(uri: str, match: str) -> None:
         connection_params_from_uri(uri)
 
 
+def test_connection_params_special_chars_in_password() -> None:
+    """Passwords containing special characters (@, :, /, ?) are parsed correctly."""
+    from meltano_state_backend_mssql.backend import connection_params_from_uri
+
+    # Password 'p@ss:w/ord?1' contains characters that confuse bare urlparse
+    params = connection_params_from_uri(
+        "mssql+pymssql://myuser:p@ss:w/ord?1@myhost:1433/mydb",
+    )
+    assert params["server"] == "myhost"
+    assert params["port"] == 1433
+    assert params["user"] == "myuser"
+    assert params["password"] == "p@ss:w/ord?1"  # noqa: S105
+    assert params["database"] == "mydb"
+
+
 # ---------------------------------------------------------------------------
 # context manager / close
 # ---------------------------------------------------------------------------

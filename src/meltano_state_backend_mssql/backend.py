@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from functools import cached_property
 from time import sleep
 from typing import TYPE_CHECKING, Any, cast
-from urllib.parse import unquote, urlparse
+from urllib.parse import quote, unquote, urlparse
 
 import pymssql
 from meltano.core.error import MeltanoError
@@ -98,6 +98,33 @@ MSSQL_TABLE = SettingDefinition(
 )
 
 
+def _encode_uri_credentials(uri: str) -> str:
+    """Percent-encode user and password in a URI so urlparse handles special characters.
+
+    Handles passwords that contain '@', ':', '/', '?', etc. by using rfind('@')
+    to locate the credential boundary and re-encoding both fields.
+    """
+    scheme_end = uri.find("://")
+    if scheme_end == -1:
+        return uri
+    after_scheme = uri[scheme_end + 3 :]
+    at_pos = after_scheme.rfind("@")
+    if at_pos == -1:
+        return uri  # no credentials
+    credentials = after_scheme[:at_pos]
+    rest = after_scheme[at_pos + 1 :]
+    colon_pos = credentials.find(":")
+    if colon_pos == -1:
+        user = credentials
+        encoded = quote(unquote(user), safe="")
+        return f"{uri[:scheme_end + 3]}{encoded}@{rest}"
+    user = credentials[:colon_pos]
+    password = credentials[colon_pos + 1 :]
+    encoded_user = quote(unquote(user), safe="")
+    encoded_password = quote(unquote(password), safe="")
+    return f"{uri[:scheme_end + 3]}{encoded_user}:{encoded_password}@{rest}"
+
+
 def connection_params_from_uri(
     uri: str,
     *,
@@ -124,7 +151,7 @@ def connection_params_from_uri(
         MissingStateBackendSettingsError: If required parameters are missing
 
     """
-    parsed = urlparse(uri)
+    parsed = urlparse(_encode_uri_credentials(uri))
 
     params: dict[str, Any] = {}
 
