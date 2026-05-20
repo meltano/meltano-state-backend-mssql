@@ -105,7 +105,7 @@ def _encode_uri_credentials(uri: str) -> str:
     to locate the credential boundary and re-encoding both fields.
     """
     scheme_end = uri.find("://")
-    if scheme_end == -1:
+    if scheme_end == -1:  # pragma: no cover - let urlparse handle this error case
         return uri
     after_scheme = uri[scheme_end + 3 :]
     at_pos = after_scheme.rfind("@")
@@ -117,12 +117,12 @@ def _encode_uri_credentials(uri: str) -> str:
     if colon_pos == -1:
         user = credentials
         encoded = quote(unquote(user), safe="")
-        return f"{uri[:scheme_end + 3]}{encoded}@{rest}"
+        return f"{uri[: scheme_end + 3]}{encoded}@{rest}"
     user = credentials[:colon_pos]
     password = credentials[colon_pos + 1 :]
     encoded_user = quote(unquote(user), safe="")
     encoded_password = quote(unquote(password), safe="")
-    return f"{uri[:scheme_end + 3]}{encoded_user}:{encoded_password}@{rest}"
+    return f"{uri[: scheme_end + 3]}{encoded_user}:{encoded_password}@{rest}"
 
 
 def connection_params_from_uri(
