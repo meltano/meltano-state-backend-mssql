@@ -6,7 +6,6 @@ import json
 import logging
 import uuid
 from contextlib import contextmanager
-from functools import cached_property
 from time import sleep
 from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import quote, unquote, urlparse
@@ -24,7 +23,6 @@ from typing_extensions import override
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable
-    from types import TracebackType
 
 
 DEFAULT_TABLE_NAME = "state"
@@ -204,31 +202,6 @@ class MssqlStateStoreManager(StateStoreManager):
         """Return a human-readable label for this backend."""
         return "MSSQL"  # pragma: no cover
 
-    def __enter__(self) -> MssqlStateStoreManager:
-        """Enter the context manager.
-
-        Returns:
-            The manager instance.
-
-        """
-        return self
-
-    @override
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        """Exit the context manager, closing the connection."""
-        self.close()
-
-    @override
-    def close(self) -> None:
-        """Close the MSSQL connection if it has been opened."""
-        if "connection" in self.__dict__:
-            self.connection.close()
-
     def __init__(
         self,
         uri: str,
@@ -281,19 +254,29 @@ class MssqlStateStoreManager(StateStoreManager):
         self.state_table = f"[{self.schema}].[{self.table}]"
         self.lock_table = f"[{self.schema}].[{self.table}_lock]"
 
+        self._connection: pymssql.Connection[pymssql.TupleRow] | None = None
         self._ensure_tables()
 
-    @cached_property
-    def connection(self) -> pymssql.Connection:
+    @property
+    def connection(self) -> pymssql.Connection[pymssql.TupleRow]:
         """Get a pymssql connection with autocommit enabled.
 
         Returns:
             A pymssql connection object.
 
         """
-        conn = pymssql.connect(**self.conn_params)
+        if self._connection is not None:
+            return self._connection
+
+        conn = pymssql.connect(as_dict=False, **self.conn_params)
         conn.autocommit(True)  # noqa: FBT003
-        return conn
+        self._connection = conn
+        return self._connection
+
+    @connection.setter
+    def connection(self, value: pymssql.Connection[pymssql.TupleRow]) -> None:
+        """Set the pymssql connection (for testing/mocking)."""
+        self._connection = value
 
     def _ensure_tables(self) -> None:
         """Ensure the state and lock tables exist."""
@@ -422,6 +405,7 @@ class MssqlStateStoreManager(StateStoreManager):
             cursor.execute(f"TRUNCATE TABLE {self.state_table}")
             return count
 
+    @override
     def get_state_ids(self, pattern: str | None = None) -> Iterable[str]:
         """Get all state_ids available in this state store manager.
 
@@ -443,6 +427,13 @@ class MssqlStateStoreManager(StateStoreManager):
                 cursor.execute(f"SELECT state_id FROM {self.state_table}")  # noqa: S608
 
             yield from (str(row[0]) for row in cursor.fetchall())
+
+    @override
+    def close(self) -> None:
+        """Close the MSSQL connection if it has been opened."""
+        if self._connection is not None:
+            self._connection.close()
+            self._connection = None
 
     def _cleanup_stale_locks(self) -> None:
         """Remove locks that are older than STALE_LOCK_SECONDS."""

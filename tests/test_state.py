@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from importlib.metadata import version
 from typing import TYPE_CHECKING
 from unittest import mock
 
@@ -8,6 +9,7 @@ import pymssql
 import pytest
 from meltano.core.state_store import MeltanoState
 from meltano.core.state_store.base import MissingStateBackendSettingsError, StateIDLockedError
+from packaging.version import Version
 
 if TYPE_CHECKING:
     from meltano_state_backend_mssql.backend import MssqlStateStoreManager
@@ -335,6 +337,10 @@ def test_connection_params_special_chars_in_password() -> None:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.xfail(
+    condition=Version(version("meltano")) < Version("4.2.0"),
+    reason="Requires Meltano 4.2+ for context manager support on StateStoreManager",
+)
 def test_context_manager(
     mock_connection: tuple[mock.MagicMock, mock.Mock, mock.Mock],
 ) -> None:
@@ -354,8 +360,13 @@ def test_context_manager(
 
     with manager as m:
         assert m is manager
+        assert manager._connection is not None
 
     mock_conn.close.assert_called_once()
+
+    manager.close()  # no-op: _connection is already None
+    mock_conn.close.assert_called_once()  # still only called once
+    assert manager._connection is None
 
 
 @pytest.mark.usefixtures("mock_connection")
@@ -371,8 +382,7 @@ def test_close_without_connection() -> None:
         password="testpass",  # noqa: S106
         database="testdb",
     )
-    # Remove any cached connection (set during _ensure_tables in __init__)
-    manager.__dict__.pop("connection", None)
+    manager._connection = None  # Simulate connection never opened
     manager.close()  # should not raise
 
 
