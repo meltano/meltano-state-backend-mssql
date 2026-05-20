@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from importlib.metadata import version
 from typing import TYPE_CHECKING
 from unittest import mock
 
@@ -10,6 +11,11 @@ from meltano_state_backend_mssql.backend import MssqlStateStoreManager
 
 if TYPE_CHECKING:
     from collections.abc import Generator
+
+
+def pytest_report_header() -> list[str]:
+    """Add Meltano version to test report header."""
+    return [f"Meltano v{version('meltano')}"]
 
 
 @pytest.fixture(scope="module")

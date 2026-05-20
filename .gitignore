@@ -1,5 +1,8 @@
 # Meltano
-.meltano/
+**/.meltano
+
+# uv
+uv.lock
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
