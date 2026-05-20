@@ -154,8 +154,6 @@ unused-type-ignore-comment = "ignore"
 addopts = [
   "--durations=10",
   "-ra",
-  "--strict-config",
-  "--strict-markers",
 ]
 filterwarnings = [
   "error",
@@ -163,8 +161,8 @@ filterwarnings = [
 ]
 log_level = "INFO"
 minversion = "9"
+strict = true
 testpaths = [ "tests" ]
-xfail_strict = true
 
 [tool.coverage.paths]
 package = [
