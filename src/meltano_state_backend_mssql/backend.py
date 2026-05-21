@@ -281,6 +281,18 @@ class MssqlStateStoreManager(StateStoreManager):
     def _ensure_tables(self) -> None:
         """Ensure the state and lock tables exist."""
         with self.connection.cursor() as cursor:
+            # CREATE SCHEMA must be its own batch in SQL Server, so EXEC() is required.
+            # Escape ']' for the bracket-quoted identifier and "'" for the EXEC string literal.
+            escaped_schema = self.schema.replace("'", "''").replace("]", "]]")
+            cursor.execute(
+                f"""
+                IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = %s)
+                BEGIN
+                    EXEC('CREATE SCHEMA [{escaped_schema}]')
+                END
+                """,  # noqa: S608
+                (self.schema,),
+            )
             # State table
             cursor.execute(f"""
                 IF NOT EXISTS (
