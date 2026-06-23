@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
-from testcontainers.community.mssql import SqlServerContainer
+from testcontainers.mssql import SqlServerContainer
 
 from meltano_state_backend_mssql.backend import MssqlStateStoreManager
 

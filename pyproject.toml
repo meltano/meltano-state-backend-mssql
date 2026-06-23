@@ -155,6 +155,7 @@ addopts = [
 filterwarnings = [
   "error",
   "once:The @wait_container_is_ready decorator is deprecated:DeprecationWarning",
+  "ignore:testcontainers.mssql is deprecated:DeprecationWarning",
 ]
 log_level = "INFO"
 minversion = "9"
