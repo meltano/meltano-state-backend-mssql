@@ -10,7 +10,7 @@ import pytest
 from meltano_state_backend_mssql.backend import MssqlStateStoreManager
 
 if TYPE_CHECKING:
-    from testcontainers.mssql import SqlServerContainer
+    from testcontainers.community.mssql import SqlServerContainer
 
 
 def _connect(container: SqlServerContainer) -> pymssql.Connection:
